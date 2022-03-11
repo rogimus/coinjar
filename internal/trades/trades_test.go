@@ -11,7 +11,11 @@ import (
 const timeLayout = "2006-01-02 15:04:05 -0700 MST"
 
 func TestUpdateData (t *testing.T) {
-	err := trades.UpdateData("BTCAUD", "2000")
+	err := trades.UpdateData("BTCAUD", "1000")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = trades.UpdateData("ETHAUD", "1000") // the API is limited to 1000
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -19,14 +23,10 @@ func TestUpdateData (t *testing.T) {
 
 func TestGetAllOrders (t *testing.T) {
 	
-	//	prevTime := strconv.FormatInt(time.Now().Unix() - 30000, 10)
 	_, err := trades.GetAllTrades("BTCAUD", "5", timeLayout)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// for _, n := range trs {
-	// 	fmt.Println(n)
-	// }
 }
 
 func TestAddFromTime (t *testing.T) {

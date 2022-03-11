@@ -160,7 +160,9 @@ func UpdateData (prodID, limit string) error {
 	} else {
 		lastLine := strings.Split(lines[len(lines)-2], ",")
 		temp, err := time.Parse(timeLayout, lastLine[0])
-		prevTime = temp.String()
+		prevTime = temp.Add(1 * time.Second).String()
+		//  API requires seconds ^^^. Theoretically not a problem unless there
+		// are more than 1000 trades in a single second.
 		if err != nil {
 			log.Fatal(err)
 			return nil
