@@ -36,7 +36,7 @@ func GetAllOrders (prodID string, level string) (Orders, error) {
 
 func AddToData (prodID string, level string) error {
 
-	baseDIR := fmt.Sprintf("./data/%s", prodID)
+	baseDIR := fmt.Sprintf("github.com/rogimus/coinjar/data/%s", prodID)
 	for err := os.Mkdir(baseDIR, 0777); err != nil; {
 		if os.IsExist(err) {
 			break
@@ -68,7 +68,6 @@ func AddToData (prodID string, level string) error {
 		}
 	}
 	bidsCSV.Close()
-
 	
 	// add the asks data
 	asksDIR := fmt.Sprintf("%s/asks.csv", baseDIR)

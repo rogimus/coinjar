@@ -3,7 +3,7 @@ package orderbook_test
 import (
 	"testing"
 
-	"./orderbook"
+	"github.com/rogimus/coinjar/internal/orderbook"
 )
 
 func TestGetAllOrders (t *testing.T) {
