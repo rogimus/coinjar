@@ -10,9 +10,10 @@ import (
 	"time"
 	"strings"
 	"strconv"
+	"net/url"
 )
 
-const baseURL = "https://data.exchange.coinjar.com/products/"
+//const baseURL = "https://data.exchange.coinjar.com/products/"
 
 type Trades []struct {
 	Tid       int       `json:"tid"`
@@ -35,8 +36,20 @@ func GetAllTrades (prodID, limit, after string) (Trades, error) {
 	}
 	prevTimeStr := strconv.FormatInt(prevTime.Unix(), 10)
 
-	URL := fmt.Sprintf("%s%s/trades?limit=%s&after=%s", baseURL, prodID, limit, prevTimeStr)
-	resp, err := http.Get(URL)
+	URL, err := url.Parse("https://data.exchange.coinjar.com/products/id/trades?limit=limit&after=after")
+	if err != nil {
+		log.Fatal(err)
+	}
+	URL.Path =  fmt.Sprintf("/products/%s/trades", prodID)
+	queries, err := url.ParseQuery(URL.RawQuery)
+	if err != nil {
+		log.Fatal(err)
+	}
+	queries.Set("limit", limit)
+	queries.Set("after", prevTimeStr)
+	URL.RawQuery = queries.Encode()
+
+	resp, err := http.Get(URL.String())
 	if err != nil {
 		log.Print(err)
 		resp.Body.Close()

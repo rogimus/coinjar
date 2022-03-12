@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"encoding/json"
 	"log"
+	"net/url"
 )
 
 const baseURL = "https://data.exchange.coinjar.com/products/"
@@ -18,8 +19,20 @@ type Orders struct {
 
 func GetAllOrders (prodID string, level string) (Orders, error) {
 
-	URL := baseURL + prodID + "/book?level=" + level
-	resp, err := http.Get(URL)
+
+	URL, err := url.Parse("https://data.exchange.coinjar.com/products/id/book?level=level")
+	if err != nil {
+		log.Fatal(err)
+	}
+	URL.Path =  fmt.Sprintf("/products/%s/book", prodID)
+	queries, err := url.ParseQuery(URL.RawQuery)
+	if err != nil {
+		log.Fatal(err)
+	}
+	queries.Set("level", level)
+	URL.RawQuery = queries.Encode()
+	
+	resp, err := http.Get(URL.String())
 	if err != nil {
 		log.Print(err)
 		resp.Body.Close()
