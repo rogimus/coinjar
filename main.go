@@ -1,4 +1,4 @@
-package main
+ package main
 
 import (
 	"time"
@@ -19,14 +19,13 @@ func main() {
 	
 }
 
-func getOrders() {
+// getOrders gets and adds the top 20 (set by level=2)
+// open orders for prodID and adds them to the files
+// "./data/prodID/bids.csv" and "./data/prodID/asks.csv"
+func getOrders(prodID string) {
 
 	for {
-		err := orderbook.AddToData("BTCAUD", "2")
-		if err != nil {
-			log.Print(err)
-		}
-		err = orderbook.AddToData("ETHAUD", "2")
+		err := orderbook.AddToData(prodID, "2")
 		if err != nil {
 			log.Print(err)
 		}
@@ -34,15 +33,16 @@ func getOrders() {
 	}
 }
 
-func getTrades() {
+// getTrades gets and adds the trades for prodID
+// to
+// "./data/prodID/trades.csv".
+// This happens every day. If there happen to be more than 1000
+// trades in a day, this won't pick up all of them until the next day.
+func getTrades(prodID string) {
 
 	for {
-		err := trades.UpdateData("BTCAUD", "1000", 100)
-		if err != nil {
-			log.Print(err)
-		}
-		err = trades.UpdateData("ETHAUD", "1000", 100)
-		time.Sleep(1 * time.Second)
+		populateTrades(prodID)
+		time.Sleep(24 * time.Hour)
 	}
 }
 

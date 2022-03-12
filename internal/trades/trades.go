@@ -26,8 +26,8 @@ type Trades []struct {
 
 const timeLayout = "2006-01-02 15:04:05 -0700 MST"
 
-// GetAllTrades gets (at most) the last /limit/ trades of /prodID/
-// since time /after/.
+// GetAllTrades gets (at most) the last *limit* trades of *prodID*
+// since time *after*.
 func GetAllTrades (prodID, limit string, after time.Time) (Trades, error) {
 
 	afterStr := strconv.FormatInt(after.Unix(), 10)
@@ -68,10 +68,11 @@ func GetAllTrades (prodID, limit string, after time.Time) (Trades, error) {
 	return response, err
 }
 
-// AddFromTime adds (at most) the last /limit/ trades of /prodID/ since
-// time /after/ to "./data/prodID/trades.csv".
+// AddFromTime adds (at most) the last *limit* trades of *prodID* since
+// time *after* to "./data/prodID/trades.csv".
 func AddFromTime (prodID, limit string, after time.Time) error {
-	baseDIR := fmt.Sprintf("/Users/roger/github.com/rogimus/coinjar/data/%s", prodID)
+	gopath := os.Getenv("GOPATH")
+	baseDIR := fmt.Sprintf("%s/src/github.com/rogimus/coinjar/data/%s", gopath, prodID)
 	for err := os.Mkdir(baseDIR, 0777); err != nil; {
  		if os.IsExist(err) {
  			break
@@ -118,14 +119,15 @@ func AddFromTime (prodID, limit string, after time.Time) error {
 }
 
 
-// UpdateData adds the first /limit/ trades since n days to
+// UpdateData adds the first *limit* trades since *n* days to
 // "./data/prodID/trades.csv". If trades.csv is not empty,
-// then it will add the first /limit/ trades since
+// then it will add the first *limit* trades since
 // the date of the last entry,
 // or from n days ago (whichever is more recent).
 // The limit is limited to 1000 by the API.
 func UpdateData (prodID, limit string, n int64) error {
- 	baseDIR := fmt.Sprintf("/Users/roger/github.com/rogimus/coinjar/data/%s", prodID)
+	gopath := os.Getenv("GOPATH")
+	baseDIR := fmt.Sprintf("%s/src/github.com/rogimus/coinjar/data/%s", gopath, prodID)
 	for err := os.Mkdir(baseDIR, 0777); err != nil; {
  		if os.IsExist(err) {
  			break
@@ -162,14 +164,15 @@ func UpdateData (prodID, limit string, n int64) error {
 	return nil
 }
 
-// GetLastDate returns the date of the last entry in ./data/prodID/trades.csv
+// GetLastDate returns the date of the last entry in "./data/prodID/trades.csv"
 // as a time.Time.
 // If the file is empty it returns Go's standard format time
 // (2006-01-02 15:04:05 -0700 MST).
 // If at any stage it exits from an error, it returns the time at exit.
 func GetLastDate(prodID string) (time.Time, error) {
 
- 	baseDIR := fmt.Sprintf("/Users/roger/github.com/rogimus/coinjar/data/%s", prodID)
+	gopath := os.Getenv("GOPATH")
+	baseDIR := fmt.Sprintf("%s/src/github.com/rogimus/coinjar/data/%s", gopath, prodID)
 	for err := os.Mkdir(baseDIR, 0777); err != nil; {
  		if os.IsExist(err) {
  			break
