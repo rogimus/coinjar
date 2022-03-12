@@ -13,8 +13,8 @@ import (
 	"net/url"
 )
 
-//const baseURL = "https://data.exchange.coinjar.com/products/"
 
+// Trades is a struct matching the json structure passed by the API.
 type Trades []struct {
 	Tid       int       `json:"tid"`
 	Price     string    `json:"price"`
@@ -26,15 +26,11 @@ type Trades []struct {
 
 const timeLayout = "2006-01-02 15:04:05 -0700 MST"
 
+// GetAllTrades gets (at most) the last /limit/ trades of /prodID/
+// since time /after/.
+func GetAllTrades (prodID, limit string, after time.Time) (Trades, error) {
 
-func GetAllTrades (prodID, limit, after string) (Trades, error) {
-
-	prevTime, err := time.Parse(timeLayout, after)
-	if err != nil {
-		log.Print(err)
-		return Trades{}, err
-	}
-	prevTimeStr := strconv.FormatInt(prevTime.Unix(), 10)
+	afterStr := strconv.FormatInt(after.Unix(), 10)
 
 	URL, err := url.Parse("https://data.exchange.coinjar.com/products/id/trades?limit=limit&after=after")
 	if err != nil {
@@ -46,7 +42,7 @@ func GetAllTrades (prodID, limit, after string) (Trades, error) {
 		log.Fatal(err)
 	}
 	queries.Set("limit", limit)
-	queries.Set("after", prevTimeStr)
+	queries.Set("after", afterStr)
 	URL.RawQuery = queries.Encode()
 
 	resp, err := http.Get(URL.String())
@@ -72,8 +68,9 @@ func GetAllTrades (prodID, limit, after string) (Trades, error) {
 	return response, err
 }
 
-
-func AddFromTime (prodID, limit, after string) error {
+// AddFromTime adds (at most) the last /limit/ trades of /prodID/ since
+// time /after/ to "./data/prodID/trades.csv".
+func AddFromTime (prodID, limit string, after time.Time) error {
 	baseDIR := fmt.Sprintf("/Users/roger/github.com/rogimus/coinjar/data/%s", prodID)
 	for err := os.Mkdir(baseDIR, 0777); err != nil; {
  		if os.IsExist(err) {
@@ -90,7 +87,7 @@ func AddFromTime (prodID, limit, after string) error {
 		return err
 	}
 	defer tradesCSV.Close()
-	currData, err := GetAllTrades(prodID, limit,  after) 
+	currData, err := GetAllTrades(prodID, limit, after) 
  	if err != nil {
 		log.Print(err)
  		return err
@@ -121,7 +118,13 @@ func AddFromTime (prodID, limit, after string) error {
 }
 
 
-func UpdateData (prodID, limit string) error {
+// UpdateData adds the first /limit/ trades since n days to
+// "./data/prodID/trades.csv". If trades.csv is not empty,
+// then it will add the first /limit/ trades since
+// the date of the last entry,
+// or from n days ago (whichever is more recent).
+// The limit is limited to 1000 by the API.
+func UpdateData (prodID, limit string, n int64) error {
  	baseDIR := fmt.Sprintf("/Users/roger/github.com/rogimus/coinjar/data/%s", prodID)
 	for err := os.Mkdir(baseDIR, 0777); err != nil; {
  		if os.IsExist(err) {
@@ -138,10 +141,54 @@ func UpdateData (prodID, limit string) error {
 		return err
 	}
 	defer tradesCSV.Close()
-	stat, err := os.Stat(tradesDIR)
+
+	prevTime, err := GetLastDate(prodID)
 	if err != nil {
 		log.Print(err)
 		return err
+	}
+	prevTime = prevTime.Add(1 * time.Second)
+	nDaysAgo := time.Now().Add(time.Duration(-n*24) * time.Hour)
+	if prevTime.Unix() <= nDaysAgo.Unix() {
+		prevTime = nDaysAgo
+	}
+
+	err = AddFromTime(prodID, limit, prevTime)
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+
+	return nil
+}
+
+// GetLastDate returns the date of the last entry in ./data/prodID/trades.csv
+// as a time.Time.
+// If the file is empty it returns Go's standard format time
+// (2006-01-02 15:04:05 -0700 MST).
+// If at any stage it exits from an error, it returns the time at exit.
+func GetLastDate(prodID string) (time.Time, error) {
+
+ 	baseDIR := fmt.Sprintf("/Users/roger/github.com/rogimus/coinjar/data/%s", prodID)
+	for err := os.Mkdir(baseDIR, 0777); err != nil; {
+ 		if os.IsExist(err) {
+ 			break
+ 		} else {
+ 			return time.Now(),err
+ 		}
+ 	}
+	
+ 	tradesDIR := fmt.Sprintf("%s/trades.csv", baseDIR)
+ 	tradesCSV, err := os.OpenFile(tradesDIR, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0777)
+	if err != nil {
+		tradesCSV.Close()
+		return time.Now(),err
+	}
+	defer tradesCSV.Close()
+	stat, err := os.Stat(tradesDIR)
+	if err != nil {
+		log.Print(err)
+		return time.Now(),err
 	}
 	length := stat.Size()
 	var res []byte
@@ -163,25 +210,20 @@ func UpdateData (prodID, limit string) error {
 	}
 	if err != nil {
 		log.Print(err)
-		return err
+		return time.Now(),err
 	}
-	var prevTime string
-		
+	var PrevTime time.Time
 	if len(lines) == 0 {
-		unformatedPrevTime := time.Now().Add(-144000 * time.Minute)
-		prevTime = unformatedPrevTime.Format(timeLayout)
+		PrevTime, err = time.Parse(timeLayout, timeLayout)
 	} else {
 		lastLine := strings.Split(lines[len(lines)-2], ",")
-		temp, err := time.Parse(timeLayout, lastLine[0])
-		prevTime = temp.Add(1 * time.Second).String()
+		PrevTime, err = time.Parse(timeLayout, lastLine[0])
 		//  API requires seconds ^^^. Theoretically not a problem unless there
 		// are more than 1000 trades in a single second.
 		if err != nil {
 			log.Fatal(err)
-			return nil
+			return time.Now(),nil
 		}
 	}
-
-	return AddFromTime(prodID, limit, prevTime)
-
+	return PrevTime, nil
 }
