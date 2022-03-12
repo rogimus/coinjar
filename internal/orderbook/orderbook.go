@@ -17,6 +17,8 @@ type Orders struct {
 	Asks [][]string `json:"asks"`
 }
 
+// GetAllOrders gets a certain number of orders (determined by /level/)
+// for /prodID/ coinjar exchange.
 func GetAllOrders (prodID string, level string) (Orders, error) {
 
 
@@ -47,6 +49,9 @@ func GetAllOrders (prodID string, level string) (Orders, error) {
 	
 }
 
+// AddToData adds a certain number of open orders (determined by /level/)
+// for prodID 
+// to the file "./data/prodID/bids.csv" and "./data/prodID/asks.csv".
 func AddToData (prodID string, level string) error {
 
 	baseDIR := fmt.Sprintf("github.com/rogimus/coinjar/data/%s", prodID)
